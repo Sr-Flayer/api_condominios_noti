@@ -7,6 +7,7 @@ const NotificacionSchema = new Schema({
     visto: { type: Boolean, default: false },
 }, {
     timestamps: true,
+
 });
 
 module.exports = mongoose.model('Notificacion', NotificacionSchema);

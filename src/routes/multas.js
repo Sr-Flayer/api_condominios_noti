@@ -18,12 +18,12 @@ router.post('/insertar_multas', async (req, res) => {
         // Crear nueva multa
         const nuevaMulta = new Multa({ departamento, motivoMulta, multa });
         await nuevaMulta.save();
-        console.log('Multa creada:', nuevaMulta);
+        // console.log('Multa creada:', nuevaMulta);
 
         // Crear notificación
         const nuevaNotificacion = new Notificacion({ departamento, multa, visto: false });
         await nuevaNotificacion.save();
-        console.log('Notificación creada:', nuevaNotificacion);
+        //console.log('Notificación creada:', nuevaNotificacion);
 
         res.status(201).json({
             message: 'Multa registrada y notificación creada exitosamente',
@@ -35,5 +35,7 @@ router.post('/insertar_multas', async (req, res) => {
         res.status(500).json({ message: 'Error al registrar la multa y la notificación' });
     }
 });
+
+
 
 module.exports = router;

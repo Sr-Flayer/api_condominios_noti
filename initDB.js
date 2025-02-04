@@ -1,4 +1,4 @@
-/*const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const Notificacion = require('./models/notificaciones');
 
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -7,8 +7,8 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 
         // Insertar un documento de prueba en la colección de notificaciones
         const notificacionPrueba = new Notificacion({
-            departamento: 'Prueba',
-            multa: 'Prueba',
+            departamento: '9',
+            multa: '100',
             visto: false
         });
 
@@ -19,4 +19,4 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
     })
     .catch(err => {
         console.error('Error al conectar a MongoDB:', err);
-    });*/
+    });

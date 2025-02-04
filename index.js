@@ -4,6 +4,8 @@ const cors = require("cors");
 const connectDB = require("./db");
 const multas = require("./src/routes/multas");
 const usuario = require("./src/routes/usuario");
+const notificaciones = require('./routes/notificaciones');
+
 
 const app = express();
 
@@ -17,6 +19,7 @@ app.use(express.json());
 // Rutas
 app.use("/api", multas);
 app.use("/api", usuario);
+app.use("/api", notificaciones);
 
 
 // Servidor
