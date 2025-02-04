@@ -4,7 +4,7 @@ const cors = require("cors");
 const connectDB = require("./db");
 const multas = require("./src/routes/multas");
 const usuario = require("./src/routes/usuario");
-const notificaciones = require('./routes/notificaciones');
+const notificaciones = require("./src/notificaciones");
 
 
 const app = express();

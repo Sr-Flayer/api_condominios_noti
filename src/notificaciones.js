@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Notificacion = require('../models/Notificacion');
+const Notificacion = require('./models/notificaciones');
 
 router.get('/notifications', async (req, res) => {
   const { departamento } = req.query;
