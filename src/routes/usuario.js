@@ -7,17 +7,17 @@ const Notificacion = require('../models/notificaciones'); // Modelo de notificac
 // Ruta para insertar un usuario
 router.post('/insertar_usuario', async (req, res) => {
     try {
-        const { nombre, apellido, telefono, departamento, correo } = req.body;
+        const { nombre, apellido, telefono, departamento, correo, rol } = req.body;
 
         // Validar datos
-        if (!nombre || !apellido || !telefono || !departamento || !correo) {
+        if (!nombre || !apellido || !telefono || !departamento || !correo ||!rol) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
         console.log('Datos recibidos:', req.body);
 
         // Crear nuevo usuario
-        const nuevoUsuario = new Usuario({ nombre, apellido, telefono, departamento, correo });
+        const nuevoUsuario = new Usuario({ nombre, apellido, telefono, departamento, correo, rol  });
         await nuevoUsuario.save();
         console.log('Usuario creado:', nuevoUsuario);
 
@@ -33,7 +33,7 @@ router.post('/insertar_usuario', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { telefono, correo, departamento } = req.body;
+        const { telefono, correo, departamento} = req.body;
 
         // Validar datos
         if (!telefono || !correo || !departamento) {
@@ -41,7 +41,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Buscar usuario
-        const usuario = await Usuario.findOne({ telefono, correo, departamento });
+        const usuario = await Usuario.findOne({ telefono, correo, departamento});
 
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -50,6 +50,7 @@ router.post('/login', async (req, res) => {
         res.status(200).json({
             message: 'Usuario encontrado',
             departamento: usuario.departamento,
+            rol: usuario.rol
         });
     } catch (error) {
         console.error('Error al buscar el usuario:', error);

@@ -6,6 +6,7 @@ const UsuarioSchema = new mongoose.Schema({
     telefono: { type: String, required: true },
     departamento: { type: String, required: true },
     correo: { type: String, required: true },
+    rol: {type: String, required: true}
 });
 
 module.exports = mongoose.model('Usuario', UsuarioSchema);
