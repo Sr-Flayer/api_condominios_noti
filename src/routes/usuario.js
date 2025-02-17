@@ -1,7 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const Usuario = require('../models/usuario'); // Modelo de Usuario
+const usuario = require('../models/usuario'); // Modelo de Usuario
+const Usuario = require('../models/usuario');
 const Notificacion = require('../models/notificaciones'); // Modelo de notificaciones
 const SECRET_KEY = 'secret';
 const jwt = require('jsonwebtoken');
@@ -33,39 +34,81 @@ router.post('/insertar_usuario', verifyToken, async (req, res) => {
     }
 });
 
+// Ruta de login
 router.post('/login', async (req, res) => {
     try {
         const { telefono, correo, departamento } = req.body;
-  
-        // Validar datos
+
         if (!telefono || !correo || !departamento) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
-  
-        // Buscar usuario
+
         const usuario = await Usuario.findOne({ telefono, correo, departamento });
-  
-        // Si no se encuentra el usuario
+
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-  
         // Generar el token
-        const token = jwt.sign({ telefono: usuario.telefono, rol: usuario.rol }, SECRET_KEY, { expiresIn: '1h' });
-  
+        const token = jwt.sign(
+            { departamento: usuario.departamento, rol: usuario.rol },
+            SECRET_KEY,
+            { expiresIn: '1h' }
+        );
+
         res.status(200).json({
             message: 'Usuario encontrado',
-            token,  // Asegúrate de enviar el token aquí
-            usuario: {  
-                departamento: usuario.departamento,
-                rol: usuario.rol
-            }
+            token: token,  // Ahora enviamos el token correctamente
+            departamento: usuario.departamento,
+            rol: usuario.rol
         });
+
     } catch (error) {
         console.error('Error al buscar el usuario:', error);
         res.status(500).json({ message: 'Error al buscar el usuario' });
     }
-  });
+});
+
+
+// Middleware para verificar el token
+function verifyToken(req, res, next) {
+    const token = req.header('Authorization');
+
+    if (!token) {
+        return res.status(401).json({ message: 'Acceso denegado. Token no proporcionado.' });
+    }
+    try {
+        const decoded = jwt.verify(token.replace('Bearer ', ''), SECRET_KEY);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ message: 'Token inválido o expirado' });
+    }
+}
+
+// Ruta protegida para obtener información del usuario autenticado
+router.get('/usuario', verifyToken, async (req, res) => {
+    try {
+        const usuario = await Usuario.findOne({ departamento: req.user.departamento });
+
+        if (!usuario) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            message: 'Acceso permitido',
+            user: {
+                departamento: usuario.departamento,
+                rol: usuario.rol,
+                nombre: usuario.nombre,
+                correo: usuario.correo
+            }
+        });
+    } catch (error) {
+        console.error('Error al obtener usuario:', error);
+        res.status(500).json({ message: 'Error al obtener usuario' });
+    }
+});
+
   
 
 // Obtener notificaciones por departamento que no han sido vistas
@@ -106,10 +149,6 @@ router.delete('/notificaciones/eliminar', async (req, res) => {
 
 module.exports = router;
 
-async function generateToken(user) {
-    const token = jwt.sign({ telefono: user.telefono, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
-    return token;
-}
 
 function verifyToken(req, res, next) {
     const token = req.header('Authorization');  // Obtiene el token del header estándar
@@ -127,3 +166,5 @@ function verifyToken(req, res, next) {
         return res.status(403).json({ message: 'Token inválido o expirado' });
     }
 }
+
+
