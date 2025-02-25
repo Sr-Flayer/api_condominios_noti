@@ -8,6 +8,8 @@ const SECRET_KEY = 'secret';
 const SECRET_KEY_TWO = 'secret2';
 const jwt = require('jsonwebtoken');
 
+
+
 // Ruta para insertar un usuario
 router.post('/insertar_usuario', verifyToken, async (req, res) => {
     try {
@@ -91,8 +93,6 @@ router.post('/logout-all-devices', async (req, res) => {
         res.status(500).json({ message: "Error al cerrar las sesiones", error });
     }
 });
-
-
 
     
 //Ruta para ferificar token permanente
