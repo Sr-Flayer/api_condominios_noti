@@ -5,22 +5,23 @@ const usuario = require('../models/usuario'); // Modelo de Usuario
 const Usuario = require('../models/usuario');
 const Notificacion = require('../models/notificaciones'); // Modelo de notificaciones
 const SECRET_KEY = 'secret';
+const SECRET_KEY_TWO = 'secret2';
 const jwt = require('jsonwebtoken');
 
 // Ruta para insertar un usuario
 router.post('/insertar_usuario', verifyToken, async (req, res) => {
     try {
-        const { nombre, apellido, telefono, departamento, correo, rol } = req.body;
+        const { nombre, apellido, telefono, departamento, contra, rol } = req.body;
 
         // Validar datos
-        if (!nombre || !apellido || !telefono || !departamento || !correo ||!rol) {
+        if (!nombre || !apellido || !telefono || !departamento || !contra ||!rol) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
         console.log('Datos recibidos:', req.body);
 
         // Crear nuevo usuario
-        const nuevoUsuario = new Usuario({ nombre, apellido, telefono, departamento, correo, rol });
+        const nuevoUsuario = new Usuario({ nombre, apellido, telefono, departamento, contra, rol });
         await nuevoUsuario.save();
         console.log('Usuario creado:', nuevoUsuario);
 
@@ -34,50 +35,150 @@ router.post('/insertar_usuario', verifyToken, async (req, res) => {
     }
 });
 
-// Ruta de login
-router.post('/login', async (req, res) => {
-    try {
-        const { telefono, correo, departamento } = req.body;
 
-        if (!telefono || !correo || !departamento) {
+router.post('/cambiar-contra', async (req, res) => {
+    try {
+        const { telefono, departamento, oldPassword, newPassword } = req.body;
+
+        if (!telefono || !departamento || !oldPassword || !newPassword) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
-        const usuario = await Usuario.findOne({ telefono, correo, departamento });
+        if (oldPassword === newPassword) {
+            return res.status(400).json({ message: 'La nueva contraseña no puede ser igual a la anterior' });
+        }
+
+        const usuario = await Usuario.findOne({ telefono, departamento });
 
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-        // Generar el token
+
+        if (usuario.contra !== oldPassword) {
+            return res.status(401).json({ message: 'La contraseña actual es incorrecta' });
+        }
+
+        usuario.contra = newPassword;
+        await usuario.save();
+
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+
+    } catch (error) {
+        console.error('Error en actualización de contraseña:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
+    }
+});
+
+
+router.post('/logout-all-devices', async (req, res) => {
+    const { telefono } = req.body; // Ahora recibe el teléfono en lugar del userId
+
+    try {
+        // Verificar si el usuario existe
+        const usuario = await Usuario.findOne({ telefono });
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        // Eliminar el token permanente del usuario
+        await Usuario.updateOne({ telefono }, { $unset: { permanentToken: "" } });
+
+        // Eliminar todas las sesiones del usuario (si usas una colección de sesiones)
+        await Session.deleteMany({ user: usuario._id });
+
+        res.status(200).json({ message: "Sesiones cerradas en todos los dispositivos" });
+    } catch (error) {
+        res.status(500).json({ message: "Error al cerrar las sesiones", error });
+    }
+});
+
+
+
+    
+//Ruta para ferificar token permanente
+router.post('/verify-permanent', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ valid: false, message: "Token no proporcionado" });
+        }
+
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, SECRET_KEY_TWO);
+
+        const usuario = await Usuario.findOne({ _id: decoded.userId, permanentToken: token });
+
+        if (!usuario) { 
+            return res.status(401).json({ valid: false, message: 'Token inválido' });
+        }
+
+        res.status(200).json({ valid: true, departamento: usuario.departamento, rol: usuario.rol });
+
+    } catch (error) {
+        res.status(401).json({ valid: false, message: "Token inválido o expirado" });
+    }
+});
+
+// Ruta de login
+router.post('/login', async (req, res) => {
+    try {
+        const { telefono, contra, departamento, rememberDevice } = req.body;
+
+        if (!telefono || !contra || !departamento) {
+            return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+        }
+
+        const usuario = await Usuario.findOne({ telefono, contra, departamento });
+
+        if (!usuario) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Generar el token temporal
         const token = jwt.sign(
-            { departamento: usuario.departamento, rol: usuario.rol },
+            { userId: usuario._id, departamento: usuario.departamento, rol: usuario.rol },
             SECRET_KEY,
             { expiresIn: '1h' }
         );
 
+        let permanentToken = null; 
+
+        if (rememberDevice) {
+            permanentToken = jwt.sign(
+                { userId: usuario._id, telefono: usuario.telefono },
+                SECRET_KEY_TWO
+            );
+
+            usuario.permanentToken = permanentToken;
+            await usuario.save();
+        }
+
         res.status(200).json({
-            message: 'Usuario encontrado',
-            token: token,  // Ahora enviamos el token correctamente
+            message: 'Usuario autenticado',
+            token,
+            permanentToken,  // Se envía solo si se generó
             departamento: usuario.departamento,
             rol: usuario.rol
         });
 
     } catch (error) {
-        console.error('Error al buscar el usuario:', error);
-        res.status(500).json({ message: 'Error al buscar el usuario' });
+        console.error('Error en login:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
 });
 
-
 // Middleware para verificar el token
 function verifyToken(req, res, next) {
-    const token = req.header('Authorization');
+    const authHeader = req.header('Authorization');
 
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ message: 'Acceso denegado. Token no proporcionado.' });
     }
+
     try {
-        const decoded = jwt.verify(token.replace('Bearer ', ''), SECRET_KEY);
+        const token = authHeader.replace('Bearer ', '');
+        const decoded = jwt.verify(token, SECRET_KEY);
         req.user = decoded;
         next();
     } catch (error) {
@@ -99,8 +200,7 @@ router.get('/usuario', verifyToken, async (req, res) => {
             user: {
                 departamento: usuario.departamento,
                 rol: usuario.rol,
-                nombre: usuario.nombre,
-                correo: usuario.correo
+                nombre: usuario.nombre
             }
         });
     } catch (error) {
@@ -108,8 +208,6 @@ router.get('/usuario', verifyToken, async (req, res) => {
         res.status(500).json({ message: 'Error al obtener usuario' });
     }
 });
-
-  
 
 // Obtener notificaciones por departamento que no han sido vistas
 router.get('/notificaciones/:departamento', async (req, res) => {
@@ -148,7 +246,6 @@ router.delete('/notificaciones/eliminar', async (req, res) => {
 });
 
 module.exports = router;
-
 
 function verifyToken(req, res, next) {
     const token = req.header('Authorization');  // Obtiene el token del header estándar

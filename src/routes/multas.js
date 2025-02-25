@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Multa = require('../models/multas'); // Ajusta la ruta al modelo según tu estructura
 const Notificacion = require('../models/notificaciones'); // Modelo de notificaciones
+const { verify } = require('jsonwebtoken');
 
 // Insertar multas y notificaciones
-router.post('/insertar_multas', async (req, res) => {
+router.post('/insertar_multas', verifyToken, async (req, res) => {
     try {
         const { departamento, motivoMulta, multa } = req.body;
 
@@ -36,6 +37,21 @@ router.post('/insertar_multas', async (req, res) => {
     }
 });
 
+// Middleware para verificar el token
+function verifyToken(req, res, next) {
+    const authHeader = req.header('Authorization');
 
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: 'Acceso denegado. Token no proporcionado.' });
+    }
 
+    try {
+        const token = authHeader.replace('Bearer ', '');
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ message: 'Token inválido o expirado' });
+    }
+}
 module.exports = router;
