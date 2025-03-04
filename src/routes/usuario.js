@@ -37,7 +37,6 @@ router.post('/insertar_usuario', verifyToken, async (req, res) => {
     }
 });
 
-
 router.post('/cambiar-contra', async (req, res) => {
     try {
         const { telefono, departamento, oldPassword, newPassword } = req.body;
@@ -71,7 +70,6 @@ router.post('/cambiar-contra', async (req, res) => {
     }
 });
 
-
 router.post('/logout-all-devices', async (req, res) => {
     const { telefono } = req.body; // Ahora recibe el teléfono en lugar del userId
 
@@ -93,7 +91,6 @@ router.post('/logout-all-devices', async (req, res) => {
         res.status(500).json({ message: "Error al cerrar las sesiones", error });
     }
 });
-
     
 //Ruta para ferificar token permanente
 router.post('/verify-permanent', async (req, res) => {
@@ -247,21 +244,5 @@ router.delete('/notificaciones/eliminar', async (req, res) => {
 
 module.exports = router;
 
-function verifyToken(req, res, next) {
-    const token = req.header('Authorization');  // Obtiene el token del header estándar
-
-    if (!token) {
-        return res.status(401).json({ message: 'Acceso denegado. Token no proporcionado.' });
-    }
-
-    try {
-        // Elimina 'Bearer ' y obtiene solo el token
-        const decoded = jwt.verify(token.replace('Bearer ', ''), SECRET_KEY);
-        req.user = decoded;  // Guarda la información del usuario en req.user
-        next();  // Continúa con la ejecución de la siguiente función en la ruta
-    } catch (error) {
-        return res.status(403).json({ message: 'Token inválido o expirado' });
-    }
-}
 
 

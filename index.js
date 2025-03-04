@@ -5,6 +5,7 @@ const connectDB = require("./db");
 const multas = require("./src/routes/multas");
 const usuario = require("./src/routes/usuario");
 const notificaciones = require("./src/notificaciones");
+const whatsapp = require("./src/routes/whatsapp");
 
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use("/api", multas);
 app.use("/api", usuario);
 app.use("/api", notificaciones);
+app.use("/api", whatsapp);
 
 
 // Servidor
