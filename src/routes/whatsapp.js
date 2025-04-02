@@ -25,16 +25,16 @@ router.post('/send-whatsapp', async (req, res) => {
 
   try {
     // Generar un token JWT
-    const token = generateToken(phoneNumber);
+    const tokenw = generateToken(phoneNumber);
 
     // Guardar el token en la base de datos
     const newToken = new Token({
       phoneNumber,
-      token,
+      tokenw,
     });
     await newToken.save();
 
-    const resetUrl = `${token}`;
+    const resetUrl = `${tokenw}`;
 
     // Enviar el mensaje de WhatsApp
     const response = await axios.post(
@@ -65,7 +65,7 @@ router.post('/send-whatsapp', async (req, res) => {
     );
 
     console.log('Mensaje enviado:', response.data);
-    res.status(200).json({ success: true, data: response.data, token });
+    res.status(200).json({ success: true, data: response.data, tokenw });
   } catch (error) {
     console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
     res.status(500).json({ success: false, error: error.response ? error.response.data : error.message });
@@ -87,7 +87,7 @@ router.post('/verify-token', async (req, res) => {
     const { phoneNumber } = decoded;
 
     // Buscar el usuario en la colección de usuarios
-    const usuario = await Usuario.findOne({ phone: phoneNumber });
+    const usuario = await Usuario.findOne({ telefono: phoneNumber });
 
     if (!usuario) {
       return res.status(404).json({ message: 'Usuario no encontrado' });

@@ -7,7 +7,9 @@ const UsuarioSchema = new mongoose.Schema({
     departamento: { type: String, required: true },
     contra: { type: String, required: true },
     rol: {type: String, required: true},
-    permanentToken: { type: String, required: null },
+    permanentToken: [{ type: String, required: false }],
+    correo:{type: String, default: null},
+    token_recuperacion: {type: String, default: null, expires: 3600}
 });
 
 module.exports = mongoose.model('Usuario', UsuarioSchema);
